@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tweet Sentiment & Candidate Analyzer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+</head>
+<body class="light-mode">
+    <div class="theme-toggle">
+        <button id="theme-switch">
+            <i class="fas fa-moon"></i>
+            <span>Dark Mode</span>
+        </button>
+    </div>
+
+    <div class="container">
+        <header class="main-header">
+            <div class="logo">
+                <i class="fab fa-twitter"></i>
+                <h1>Tweet Analyzer</h1>
+            </div>
+            <p class="tagline">AI-Powered Sentiment & Candidate Analysis</p>
+        </header>
+
+        <section class="hero">
+            <div class="hero-content">
+                <h2>Analyze Tweets Like Never Before</h2>
+                <p>Discover sentiment, candidate prediction, and advanced analytics with our AI model trained on political tweets</p>
+            </div>
+        </section>
+
+        <div class="compose-box">
+            <form id="analyze-form" method="POST" action="/predict">
+                <textarea name="tweet" id="tweet-text" placeholder="Enter a tweet to analyze..." required>{{ tweet or '' }}</textarea>
+                <div class="button-container">
+                    <button type="submit" class="analyze-button">
+                        <i class="fas fa-bolt"></i>Analyze Tweet
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        {% if error %}
+        <div class="error-message">
+            <i class="fas fa-exclamation-circle"></i> {{ error }}
+        </div>
+        {% endif %}
+
+        {% if sentiment %}
+        <div class="results-container">
+            <div class="tweet-card">
+                <div class="tweet-header">
+                    <div class="profile-icon">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="user-info">
+                        <h3>Analyzed Tweet</h3>
+                        <span>@tweet_analyzer</span>
+                    </div>
+                </div>
+
+                <div class="tweet-content">
+                    {{ tweet }}
+                </div>
+
+                <div class="tweet-analysis">
+                    <div class="analysis-item">
+                        <div class="analysis-icon {% if sentiment == 'positive' %}sentiment-positive{% elif sentiment == 'negative' %}sentiment-negative{% else %}sentiment-neutral{% endif %}">
+                            {% if sentiment == 'positive' %}
+                            <i class="fas fa-smile"></i>
+                            {% elif sentiment == 'negative' %}
+                            <i class="fas fa-frown"></i>
+                            {% else %}
+                            <i class="fas fa-meh"></i>
+                            {% endif %}
+                        </div>
+                        <div class="analysis-text">
+                            <h4>Sentiment Analysis</h4>
+                            <p>{{ sentiment|title }}</p>
+                            
+                            <div class="sentiment-details">
+                                <div class="sentiment-bar">
+                                    <div class="bar-label">Positive</div>
+                                    <div class="bar-container">
+                                        <div class="bar positive" style="width: {{ sentiment_details.positive * 100 }}%"></div>
+                                    </div>
+                                    <div class="bar-value">{{ sentiment_details.positive }}</div>
+                                </div>
+                                <div class="sentiment-bar">
+                                    <div class="bar-label">Neutral</div>
+                                    <div class="bar-container">
+                                        <div class="bar neutral" style="width: {{ sentiment_details.neutral * 100 }}%"></div>
+                                    </div>
+                                    <div class="bar-value">{{ sentiment_details.neutral }}</div>
+                                </div>
+                                <div class="sentiment-bar">
+                                    <div class="bar-label">Negative</div>
+                                    <div class="bar-container">
+                                        <div class="bar negative" style="width: {{ sentiment_details.negative * 100 }}%"></div>
+                                    </div>
+                                    <div class="bar-value">{{ sentiment_details.negative }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="analysis-item">
+                        <div class="analysis-icon candidate-icon">
+                            <i class="fas fa-user-tie"></i>
+                        </div>
+                        <div class="analysis-text">
+                            <h4>Candidate Prediction</h4>
+                            <p>{{ candidate_prediction }}</p>
+                            
+                            {% if confidence_scores %}
+                            <div class="confidence-scores">
+                                {% for score in confidence_scores %}
+                                <div class="confidence-bar">
+                                    <div class="bar-label">{{ score.candidate }}</div>
+                                    <div class="bar-container">
+                                        <div class="bar candidate" style="width: {{ score.score * 100 }}%"></div>
+                                    </div>
+                                    <div class="bar-value">{{ "%.0f"|format(score.score * 100) }}%</div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if important_words %}
+                    <div class="analysis-item">
+                        <div class="analysis-icon words-icon">
+                            <i class="fas fa-key"></i>
+                        </div>
+                        <div class="analysis-text">
+                            <h4>Key Words</h4>
+                            <div class="key-words">
+                                {% for word, count in important_words %}
+                                <span class="key-word">{{ word }} <small>({{ count }})</small></span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="data-visualization">
+                <div class="viz-card">
+                    <h3>Overall Sentiment Distribution</h3>
+                    <div class="chart-container">
+                        <canvas id="sentimentPieChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="viz-card">
+                    <h3>Candidate Sentiment Analysis</h3>
+                    <div class="chart-container">
+                        <canvas id="candidateBarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="data-visualization landing">
+            <div class="viz-card">
+                <h3>Overall Sentiment Distribution</h3>
+                <div class="chart-container">
+                    <canvas id="landingSentimentPieChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="viz-card">
+                <h3>Candidate Sentiment Analysis</h3>
+                <div class="chart-container">
+                    <canvas id="landingCandidateBarChart"></canvas>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <section class="how-it-works">
+            <h2>How It Works</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-icon">
+                        <i class="fas fa-keyboard"></i>
+                    </div>
+                    <h3>Enter Text</h3>
+                    <p>Paste or type any tweet or text for analysis</p>
+                </div>
+                <div class="step">
+                    <div class="step-icon">
+                        <i class="fas fa-cogs"></i>
+                    </div>
+                    <h3>AI Analysis</h3>
+                    <p>Our model processes the text using advanced NLP techniques</p>
+                </div>
+                <div class="step">
+                    <div class="step-icon">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    <h3>Results</h3>
+                    <p>Get sentiment analysis and candidate predictions instantly</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <footer class="main-footer">
+        <p>Tweet Analyzer © 2025 • AI-Powered Sentiment Analysis</p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='scripts.js') }}"></script>
+    
+    <script>
+        // Initialize sentiment data for charts
+        var sentimentData = {{ sentiment_data|tojson|safe if sentiment_data else 'null' }};
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            if (sentimentData) {
+                initializeCharts(sentimentData);
+            } else {
+                // Fetch data from API if not provided in template
+                fetch('/api/sentiment_data')
+                    .then(response => response.json())
+                    .then(data => {
+                        initializeCharts(data);
+                    });
+            }
+        });
+    </script>
+</body>
+</html>
