@@ -10,3 +10,8 @@ pip install -r requirements.txt
 4. Run the project
 python app.py
 
+
+//not to use 
+pip freeze > requirements.txt
+
+
