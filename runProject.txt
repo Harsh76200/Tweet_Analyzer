@@ -1,17 +1,1 @@
- 1. Create a Virtual Environment (if not already created)
-python -m venv venv
-
-2. Activate the Virtual Environment
-venv\Scripts\activate
-
-3. Use requirements.txt to install all dependencies
-pip install -r requirements.txt
-
-4. Run the project
-python app.py
-
-
-//not to use 
-pip freeze > requirements.txt
-
 
